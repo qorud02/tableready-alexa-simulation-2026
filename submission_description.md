@@ -8,6 +8,8 @@ A pantry-aware dinner agent that compares the options, checks the constraints an
 
 Alexa+ — simulated experience using local agentic tools.
 
+Mini challenges: None.
+
 ## Inspiration
 
 “What should we make for dinner?” often means several tasks at once: check what is already available, find a meal everyone can eat, keep the shopping within budget, and leave enough time to prepare it. A conversational assistant becomes useful when it carries those details into a plan people can inspect and act on.
@@ -26,7 +28,7 @@ The transaction updates local pantry quantities, simulated grocery stock and rec
 
 The custom agentic tool is implemented in dependency-free JavaScript. Its intent parser, candidate comparator, pantry allocation, basket quote and calendar checks run as callable functions. The interface shows the actual tool inputs and outputs, including rejected candidates. HTML, CSS and original SVG artwork create a responsive household workspace, with a conversation, rich recipe cards, consent dialog and service-state controls.
 
-This follows the permitted simulated Alexa+ path. External grocery and calendar services use fictional local adapters; no Amazon connection, live payment or remote language model is claimed. The planning, confirmation and state changes themselves execute in the application. The app requires no account, API key or paid runtime.
+This follows the permitted simulated Alexa+ path. Grocery quotes, inventory and calendar bookings use fictional local adapters. The planner, confirmation checks and state changes execute in the browser. The app requires no account, API key or paid runtime.
 
 ## Challenges
 
@@ -44,8 +46,8 @@ An agent feels useful when the reason for its choice and the consequences of con
 
 ## What's next
 
-Replace the local adapters with authorised pantry, supplier and calendar integrations. Use supplier quote versions and cancellation responses, represent reservations and consumption separately, and validate dietary/product data. Keep the same inspectable planning and exact-consent contract across devices.
+Replace the local adapters with authorised pantry, supplier and calendar integrations. Use supplier quote versions and cancellation responses, represent reservations and consumption separately, and validate product data. Keep each action tied to its confirmed basket and time across devices.
 
 ## Built with
 
-JavaScript, HTML5, CSS3, SVG, localStorage, Node.js, node:test, custom local agentic tools.
+JavaScript, HTML5, CSS3, SVG, localStorage, Node.js, node:test, custom local agentic tools, OpenAI Codex, GitHub Pages.

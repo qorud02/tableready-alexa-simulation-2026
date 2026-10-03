@@ -36,4 +36,16 @@
 
 **Build again:** yes for a portable, testable simulation. A connected product would add authenticated adapters and server-side transaction checks.
 
-No AWS, Alexa API, MCP server, Ring or Bee integration was used. No experience with those services is invented in this feedback.
+TableReady runs a local planner with fictional grocery and calendar adapters.
+
+## GitHub Pages — hosting
+
+**Use:** publish the static simulation from its public GitHub repository.
+
+**What worked well:** the latest-build API reported a successful build for commit `ae91ae731a94cb0d5f362bba283d07ff9d56ce25` in 45.549 seconds. The repository retains the setup instructions, tests and MIT licence.
+
+**What needs work:** the initial Pages API response had a null status. A second query to the latest-build endpoint was needed to confirm completion.
+
+**Onboarding:** the selected source files were copied into a new public repository, then Pages was enabled through the API using the existing GitHub account.
+
+**Build again:** yes, for a dependency-free static app that reviewers can download and run locally.
