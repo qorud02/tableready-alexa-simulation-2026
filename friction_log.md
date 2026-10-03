@@ -1,33 +1,30 @@
 # Observed friction and feature requests
 
-## F1 — understanding the simulation route
+## F1 — locating the simulated-experience requirements
+- Task: determine the required runtime for a simulated Alexa+ entry.
+- Steps: read the primary track description, technical requirements and simulation exception in https://amazonappdev2026.devpost.com/rules.
+- Expected: a route-specific checklist.
+- Observed: the simulation exception resolves the requirement but is separated from the initial Agent Skill/MCP description.
+- Severity: important documentation friction.
+- Workaround: record the chosen route in the README.
+- Suggestion: put a simulation checklist beside the integration routes.
 
-- **Task attempted:** determine which technology must actually run in an Alexa+ simulation submission.
-- **Steps:** read the primary track requirements, the runtime-technology requirement and the later simulated-experience exception in the official rules.
-- **Expected:** one clear route-specific checklist.
-- **Observed:** the primary description starts with Agent Skill/MCP, while the detailed exception permits any AI or agentic tool without that surface. The exception resolves the requirement, but requires reading several sections together.
-- **Severity:** important.
-- **Workaround:** record the chosen simulation route explicitly in the README and demonstrate the actual local agentic tool calls.
-- **Suggestion:** put a separate “simulated Alexa+” checklist alongside the Agent Skill and MCP paths, with a minimal accepted runtime example.
+## F2 — reusing a quote after a stock update
+- Component: TableReady's custom local tools.
+- Steps: create the curry plan, set simulated coconut-milk stock to zero, then confirm the original plan.
+- Expected: preserve the approved quantities and quote, or request a fresh decision.
+- Observed: commitPlan rejected the plan with a workspace-change response. Zero orders and zero calendar entries were created.
+- Severity: critical when connecting a purchase tool.
+- Workaround: replan and inspect the fresh confirmation.
+- Suggestion: return a structured quote-version error with the changed item and a re-quote action.
 
-## F2 — quote and consent contract
+## F3 — cancelling after newer catalogue work
+- Component: TableReady's custom local tools.
+- Steps: confirm a meal, update the catalogue in a separate copy of the confirmed workspace, then cancel the earlier meal.
+- Expected: reverse that transaction while keeping the later catalogue update.
+- Observed: cancellation was blocked because revision 4 followed the confirmed revision 3.
+- Severity: important product limitation.
+- Workaround: restore only the latest unstarted plan without a later revision.
+- Suggestion: use per-transaction compensating changes when connecting independent services.
 
-- **Task attempted:** keep one dinner plan valid while the simulated supplier price or stock changes.
-- **Steps:** create a curry quote, change coconut-milk price or stock, then attempt the original confirmation.
-- **Expected:** either the exact approved quote executes or a changed condition asks for a new decision.
-- **Observed:** a simple unchecked action could execute against changed service state. The implementation now recomputes the plan and blocks a mismatched revision or snapshot.
-- **Severity:** critical for a connected purchase integration.
-- **Workaround:** snapshot-based consent, fresh feasibility checks and an idempotency key.
-- **Suggestion:** a reference purchase-agent pattern with quote versions, expiry, consent summary and structured stale-quote responses would help developers build consistent confirmations.
-
-## F3 — reversal after newer work
-
-- **Task attempted:** cancel a confirmed plan after another catalogue update.
-- **Steps:** confirm a meal, change catalogue stock, then cancel the earlier meal.
-- **Expected:** cancellation should affect only the earlier transaction.
-- **Observed:** restoring an old whole-state snapshot could erase later changes. The current demo therefore blocks automatic reversal after a newer revision.
-- **Severity:** important.
-- **Workaround:** allow exact restoration only for the latest unstarted plan.
-- **Suggestion:** document a compensating-action example across order, inventory and calendar tools, including partial supplier cancellation and retained receipt history.
-
-F2 and F3 are observed development issues in the custom local tools; they are not claims of defects in an Amazon API. F1 concerns the reviewed official entry specification.
+The reproducible local comparison results are in selection_scenarios_20261004.json. F2 and F3 concern TableReady's own tools.
