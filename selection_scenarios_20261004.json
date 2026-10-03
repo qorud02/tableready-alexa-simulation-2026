@@ -1,0 +1,303 @@
+{
+  "generatedUtc": "2026-10-03T16:29:22.542Z",
+  "check": {
+    "kind": "Node function/template check; no browser rendering",
+    "opened": true,
+    "pantry": [
+      {
+        "name": "Brown rice",
+        "lotId": "LOT-R",
+        "qty": 280,
+        "unit": "g"
+      }
+    ],
+    "basketCents": 755,
+    "startAt": "2026-10-05T09:35:00.000Z",
+    "endAt": "2026-10-05T10:00:00.000Z",
+    "displayed": true
+  },
+  "method": "Authored fixtures; fixed clock; each comparison starts from an independent state. Pantry-blind case removes lots but keeps identical catalog prices and request. Local calculations; no household outcome measurement.",
+  "scenarios": [
+    {
+      "name": "pantry aware baseline",
+      "request": "Dinner tomorrow at 7 pm for four, vegetarian, under $18",
+      "selected": "lentil",
+      "totalCents": 0,
+      "candidates": [
+        {
+          "recipe": "lentil",
+          "feasible": true,
+          "shoppingCents": 0,
+          "pantryCoveragePercent": 100,
+          "nearDateLots": 1,
+          "reasons": []
+        },
+        {
+          "recipe": "curry",
+          "feasible": true,
+          "shoppingCents": 755,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 0,
+          "reasons": []
+        },
+        {
+          "recipe": "pasta",
+          "feasible": true,
+          "shoppingCents": 800,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 0,
+          "reasons": []
+        },
+        {
+          "recipe": "noodles",
+          "feasible": false,
+          "shoppingCents": 710,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 1,
+          "reasons": [
+            "Declared ingredients to avoid: peanuts."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "identical request, pantry removed",
+      "request": "Dinner tomorrow at 7 pm for four, vegetarian, under $18",
+      "selected": "lentil",
+      "totalCents": 825,
+      "candidates": [
+        {
+          "recipe": "lentil",
+          "feasible": true,
+          "shoppingCents": 825,
+          "pantryCoveragePercent": 0,
+          "nearDateLots": 0,
+          "reasons": []
+        },
+        {
+          "recipe": "curry",
+          "feasible": true,
+          "shoppingCents": 995,
+          "pantryCoveragePercent": 0,
+          "nearDateLots": 0,
+          "reasons": []
+        },
+        {
+          "recipe": "pasta",
+          "feasible": true,
+          "shoppingCents": 980,
+          "pantryCoveragePercent": 0,
+          "nearDateLots": 0,
+          "reasons": []
+        },
+        {
+          "recipe": "noodles",
+          "feasible": false,
+          "shoppingCents": 870,
+          "pantryCoveragePercent": 0,
+          "nearDateLots": 0,
+          "reasons": [
+            "Declared ingredients to avoid: peanuts."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "vegan six diners $10",
+      "request": "Dinner tomorrow at 7 pm for six, vegan, under $10",
+      "selected": "lentil",
+      "totalCents": 425,
+      "candidates": [
+        {
+          "recipe": "lentil",
+          "feasible": true,
+          "shoppingCents": 425,
+          "pantryCoveragePercent": 84,
+          "nearDateLots": 1,
+          "reasons": []
+        },
+        {
+          "recipe": "curry",
+          "feasible": false,
+          "shoppingCents": 1355,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 0,
+          "reasons": [
+            "Shopping total $13.55 exceeds $10.00."
+          ]
+        },
+        {
+          "recipe": "pasta",
+          "feasible": false,
+          "shoppingCents": 1540,
+          "pantryCoveragePercent": 21,
+          "nearDateLots": 0,
+          "reasons": [
+            "This recipe does not match the vegan preference.",
+            "Shopping total $15.40 exceeds $10.00."
+          ]
+        },
+        {
+          "recipe": "noodles",
+          "feasible": false,
+          "shoppingCents": 1210,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 1,
+          "reasons": [
+            "Declared ingredients to avoid: peanuts.",
+            "Shopping total $12.10 exceeds $10.00."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "curry with zero coconut stock",
+      "request": "Dinner tomorrow at 7 pm for four, vegetarian, under $18, curry",
+      "selected": null,
+      "totalCents": null,
+      "candidates": [
+        {
+          "recipe": "lentil",
+          "feasible": true,
+          "shoppingCents": 0,
+          "pantryCoveragePercent": 100,
+          "nearDateLots": 1,
+          "reasons": []
+        },
+        {
+          "recipe": "curry",
+          "feasible": false,
+          "shoppingCents": 755,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 0,
+          "reasons": [
+            "A required grocery pack is out of stock."
+          ]
+        },
+        {
+          "recipe": "pasta",
+          "feasible": true,
+          "shoppingCents": 800,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 0,
+          "reasons": []
+        },
+        {
+          "recipe": "noodles",
+          "feasible": false,
+          "shoppingCents": 710,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 1,
+          "reasons": [
+            "Declared ingredients to avoid: peanuts."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "declared milk and peanut exclusions",
+      "request": "Dinner tomorrow at 7 pm for four, vegetarian, under $18, avoid milk, no peanuts",
+      "selected": "lentil",
+      "totalCents": 0,
+      "candidates": [
+        {
+          "recipe": "lentil",
+          "feasible": true,
+          "shoppingCents": 0,
+          "pantryCoveragePercent": 100,
+          "nearDateLots": 1,
+          "reasons": []
+        },
+        {
+          "recipe": "curry",
+          "feasible": true,
+          "shoppingCents": 755,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 0,
+          "reasons": []
+        },
+        {
+          "recipe": "pasta",
+          "feasible": false,
+          "shoppingCents": 800,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 0,
+          "reasons": [
+            "Declared ingredients to avoid: milk."
+          ]
+        },
+        {
+          "recipe": "noodles",
+          "feasible": false,
+          "shoppingCents": 710,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 1,
+          "reasons": [
+            "Declared ingredients to avoid: peanuts."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "past-date carrot lot excluded",
+      "request": "Dinner tomorrow at 7 pm for four, vegetarian, under $18",
+      "selected": "lentil",
+      "totalCents": 160,
+      "candidates": [
+        {
+          "recipe": "lentil",
+          "feasible": true,
+          "shoppingCents": 160,
+          "pantryCoveragePercent": 75,
+          "nearDateLots": 0,
+          "reasons": []
+        },
+        {
+          "recipe": "curry",
+          "feasible": true,
+          "shoppingCents": 755,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 0,
+          "reasons": []
+        },
+        {
+          "recipe": "pasta",
+          "feasible": true,
+          "shoppingCents": 800,
+          "pantryCoveragePercent": 25,
+          "nearDateLots": 0,
+          "reasons": []
+        },
+        {
+          "recipe": "noodles",
+          "feasible": false,
+          "shoppingCents": 870,
+          "pantryCoveragePercent": 0,
+          "nearDateLots": 0,
+          "reasons": [
+            "Declared ingredients to avoid: peanuts."
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "stale quote",
+      "outcome": "The workspace changed after the quote. Replan before confirming.",
+      "orders": 0,
+      "calendarEntries": 0
+    },
+    {
+      "name": "duplicate confirmation",
+      "idempotent": true,
+      "orders": 1,
+      "calendarEntries": 1
+    },
+    {
+      "name": "cancel latest unstarted",
+      "pantryRestored": true,
+      "catalogRestored": true
+    }
+  ]
+}
