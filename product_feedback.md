@@ -1,51 +1,73 @@
 # Product feedback
 
-## TableReady local agentic tools
+## Custom local agentic tools
 
-**Use:** request parsing, pantry retrieval, recipe comparison, grocery quotation, calendar checking, confirmation and reversal. This custom tool is the runtime used for the Alexa+ experience simulation.
+**Use:** the Alexa+ simulation runtime: request parsing, pantry retrieval, recipe comparison, grocery quotation, calendar checking, confirmation and cancellation.
 
-**What worked well:** pure functions made the tool outputs inspectable and repeatable. Candidate comparison and transaction logic can be tested without the browser. Quote revision checks and idempotency required no external dependency.
+**Worked well:** callable domain functions made the candidate reasons and tool trace inspectable. The same functions serve the interface and automated tests. Exact snapshots and plan IDs let the app check stale decisions and repeated confirmations.
 
-**What needs work:** the bounded parser cannot interpret arbitrary conversation. The current one-device revision model is conservative: any later service change blocks automatic cancellation. Real suppliers need independently versioned quotes and compensating actions instead of the demo's local restoration.
+**Needs work:** the English parser covers a limited set of meal-planning patterns. A shared workspace revision is conservative: unrelated service changes can invalidate a pending plan or block cancellation. Independent supplier integrations need their own quote versions and compensating actions.
 
-**Onboarding:** no service account or API key was needed. A static browser app and Node's built-in test runner were enough to execute the full local workflow.
+**Onboarding:** the runtime started as plain JavaScript modules and authored fixtures. A static server and Node's built-in test runner support development without a service account.
 
-**Build again:** yes. The separation between planning and explicit mutation provides a useful contract for connected services.
+**Would we build with it again?** Yes. Keeping planning and explicit mutation separate provides a practical contract for future connected adapters.
 
-## OpenAI Codex — development tool
+## OpenAI Codex
 
-**Use:** implementation of the original application, test development and source review.
+**Use:** application implementation, domain tests, source review and submission documentation.
 
-**What worked well:** the domain engine and executable tests could be developed alongside the interface and documentation. Tests made it possible to verify the exact pending request during confirmation and to guard later changes during reversal.
+**Worked well:** the planner and its tests could be developed alongside the interface. Executable scenarios exposed the difference between a proposed plan, a confirmed receipt and a safe reversal.
 
-**What needs work:** browser verification needs a separate working browser session. Code and passing domain tests alone do not establish the quality of the rendered layout or actual browser interactions.
+**Needs work:** source inspection and domain tests do not inspect the rendered interaction. A separate browser pass remains necessary for layout, keyboard behavior and the recorded demonstration.
 
-**Onboarding:** an existing development environment and Node installation were used. No new runtime account or paid API was added to the app.
+**Onboarding:** we used the existing development environment and Node installation. Codex is a development tool; the shipped planner runs its JavaScript directly.
 
-**Build again:** yes, with the same separation between executable domain verification and browser verification.
+**Would we build with it again?** Yes, with domain tests and browser verification as separate checks.
 
 ## Browser standards and Node.js
 
-**Use:** ES modules, semantic HTML, responsive CSS, SVG, localStorage, JSON downloads, static serving and the built-in `node:test` runner.
+**Use:** ES modules, HTML, CSS, SVG, localStorage, JSON exports, local static serving and `node:test`.
 
-**What worked well:** the application has no third-party package installation or build requirement. Sixteen domain tests run from one command.
+**Worked well:** the project runs without package dependencies or a build step. All 23 domain tests pass with one command. Committed data can be retained and inspected on the same device. Text input supports the complete demonstration.
 
-**What needs work:** browser storage is device-specific and can fail or be cleared. The interface reports storage failures, but connected use needs durable account-based storage and access controls.
+**Needs work:** localStorage is tied to a browser profile and can be cleared or unavailable. Connected use needs durable account-based storage.
 
-**Onboarding:** `npm start` runs the static server; `npm test` runs the domain suite.
+**Onboarding:** `npm start` serves the application and `npm test` executes the domain suite.
 
-**Build again:** yes for a portable, testable simulation. A connected product would add authenticated adapters and server-side transaction checks.
+**Would we build with it again?** Yes for a portable simulation, with authenticated service adapters and server-side transaction checks for a connected product.
 
-TableReady runs a local planner with fictional grocery and calendar adapters.
+## GitHub Pages
 
-## GitHub Pages — hosting
+**Use:** host the static application from its source repository.
 
-**Use:** publish the static simulation from its public GitHub repository.
+**Worked well:** the existing deployment completed successfully, and the same static files can be served locally. Source, setup instructions and the MIT license are available together.
 
-**What worked well:** the latest-build API reported a successful build for commit `ae91ae731a94cb0d5f362bba283d07ff9d56ce25` in 45.549 seconds. The repository retains the setup instructions, tests and MIT licence.
+**Needs work:** the initial Pages API status was null. A later query to the latest-build endpoint was needed to confirm completion.
 
-**What needs work:** the initial Pages API response had a null status. A second query to the latest-build endpoint was needed to confirm completion.
+**Onboarding:** the source was placed in a public repository and Pages was enabled using the existing GitHub account.
 
-**Onboarding:** the selected source files were copied into a new public repository, then Pages was enabled through the API using the existing GitHub account.
+**Would we build with it again?** Yes for this static application and downloadable source package.
 
-**Build again:** yes, for a dependency-free static app that reviewers can download and run locally.
+## AI Voice Generator
+
+**Use:** generate the demonstration's English narration with the standard `clear` voice preset.
+
+**Worked well:** short scene transcripts returned downloadable MP3 clips. Eight clips could be measured and placed against the application's recording timeline.
+
+**Needs work:** the full voiceover response linked to a viewer page rather than a direct audio file. We used the short-clip download URLs and aligned the scene audio locally.
+
+**Onboarding:** the connected tool accepted the transcript and voice preset. Each scene paragraph was kept within its 500-character preview limit.
+
+**Would we build with it again?** Yes, with separate scene files for easier timing adjustments.
+
+## FFmpeg
+
+**Use:** decode the narration clips, normalize their levels, make small timing adjustments where needed, and assemble a 160-second audio master.
+
+**Worked well:** measured PCM sample counts provide a reproducible duration and subtitle scene boundaries.
+
+**Needs work:** timing audio does not establish that the corresponding screen action is visible. Each clip still needs to be checked against the real app recording.
+
+**Onboarding:** an existing local FFmpeg installation was used by the audio assembly script.
+
+**Would we build with it again?** Yes for repeatable audio assembly and final video encoding.

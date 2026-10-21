@@ -1,80 +1,85 @@
 # TableReady
 
-**An Alexa+ experience simulation with a real local agentic planner.**
+**An Alexa+ experience simulation that carries a dinner request from pantry check to a confirmed plan.**
 
-TableReady turns a household dinner request into a plan across pantry inventory, recipe choices, a grocery quote and a preparation calendar. It compares alternatives, responds to changed constraints, and makes the exact actions visible before confirmation.
+TableReady compares four recipes against household ingredients, budget, pack availability and preparation time. Follow-up requests change the plan while retaining the other constraints. Before acting, it shows the exact quantities, basket and calendar interval. A changed quote triggers a fresh decision.
 
-The planning and local state changes execute in JavaScript. Grocery and calendar integrations are simulated service adapters with fictional data. No card is charged and no external account is connected.
+## Hackathon track and runtime
+
+**Alexa+ primary track: simulated experience.** The planner and service actions execute in JavaScript in a web app. Pantry, grocery and calendar adapters use fictional local data. The project uses the [official simulated-experience route](https://amazonappdev2026.devpost.com/rules), which accepts an agentic tool without requiring an Alexa connection, Agent Skill or MCP server.
+
+The runtime is a deterministic tool orchestrator: a bounded English parser calls pantry retrieval, candidate comparison, basket quotation and calendar checks. The visible trace contains those functions' actual inputs and outputs. The service adapters record simulated orders and local appointments.
 
 ## Run and test
 
-Node.js 20 or later. No dependencies, API keys, Amazon developer account or AWS billing are required.
+Use Node.js 20 or later:
 
 ```sh
 npm start
-# http://127.0.0.1:8766
+# Open http://127.0.0.1:8766
 
 npm test
 ```
 
-The app can be published directly on any static host; there is no build step. Opening index.html as a local file does not work with ES modules. Source repository licensing: MIT.
+There are no package dependencies or build steps. Serve the folder over HTTP; ES modules need a server rather than opening `index.html` directly. The source and original assets use the MIT license.
 
-## A complete demonstration
+## Walk through the complete scenario
 
-1. Select **Plan tomorrow**. Four candidates are actually evaluated from the current pantry, catalogue, time and preferences. The lentil bowls use existing ingredients; the peanut noodles conflict with the household's declared exclusion.
-2. Select **Try the curry**. The agent retains tomorrow's dinner time and compares a new recipe. The initial curry basket is two chickpea cans, a coconut-milk can and spinach: **$7.55**.
-3. Open **Pantry & services**, change coconut milk stock to zero, and return to the earlier plan. Its confirmation is stale and fails. Ask for a new curry plan; the stock constraint now blocks it.
-4. Restore coconut stock, request the curry again and inspect the exact confirmation. Confirm. Pantry quantities, catalogue stock, receipt, local calendar, preferences and action ledger change together.
-5. Open **Activity & memory** and inspect the recorded action sequence. Reload: saved quantities, preferences and receipts remain.
-6. Cancel the latest plan before preparation starts. The original pantry and catalogue are restored; cancellation records remain. Automatic reversal is blocked after newer workspace changes or the start of preparation.
+Start with a fresh demo workspace and use a meal time tomorrow.
 
-## Supported request language
+1. Enter **Dinner tomorrow at 7 pm for four, vegetarian, under $18.** Inspect all four candidate cards and the tool trace. Lentil bowls use the available pantry; peanut noodles fail the saved peanut exclusion.
+2. Enter **Switch to curry, under $8.** Diners and meal time remain. The basket has two chickpea cans ($3.10), one coconut-milk can ($2.20) and one spinach pack ($2.25): **$7.55**. The pantry supplies 280 g of rice.
+3. In **Pantry & services**, set coconut-milk stock to **0**. Return to the existing plan and attempt confirmation. The changed revision blocks it. Request curry again to see the stock failure in the new comparison.
+4. Restore coconut stock to **5** at **$2.20**. Request curry again, inspect the new basket and preparation interval, then confirm. The workspace records the inventory allocation, simulated order, calendar booking, preferences and action ledger together.
+5. Open **Activity & memory**, then reload the page. The receipt, quantities, calendar and confirmed preferences remain in this browser.
+6. Cancel the latest plan before preparation starts and before making another service change. Pantry and catalogue quantities return to their previous values, while the cancellation records remain.
 
-- “Dinner tomorrow at 7 pm for 4, vegetarian, under $18.”
-- “Switch to curry.”
-- “Under $8.”
-- “Plan dinner tomorrow at 7 pm for six, vegan, under $10, no peanuts.”
-- “Avoid milk.”
+The included `demo_script.md` follows this sequence in 160 seconds.
 
-The parser recognises diners, today/tonight/tomorrow, time, budget, vegetarian/vegan, declared peanuts/milk/wheat exclusions and recipe names. Unknown requests ask a question. It is a bounded intent parser, not a general language model. Pending recipe changes retain the meal time and constraints. Only confirmation updates saved household preferences.
+## Requests the parser understands
 
-## Agent and tools
+Examples:
 
-`agent.js` is the local agentic tool. It calls pantry retrieval, recipe comparison, basket quotation and calendar checking, then waits for consent. Four feasible/infeasible candidates are shown with actual calculated reasons. The trace displays the inputs and outputs produced by those functions.
+- `Dinner tomorrow at 7 pm for four, vegetarian, under $18`
+- `Switch to curry, under $8`
+- `Plan dinner tomorrow at 7 pm for six, vegan, under $10, no peanuts`
+- `Avoid milk`
+- `Make it six people`
+- `Raise the budget to $20`
+- `Move it to 8:30 pm`
 
-Hard constraints: declared ingredient exclusions, diet, shopping budget, pack stock, preparation lead time and calendar overlap. Feasible options are ranked by near-date pantry use, pantry coverage, shopping cost and preparation time. Explicit recipe choice retains all hard constraints. A changed quote requires replanning.
+Supported fields are diners (1-8), today/tonight/tomorrow, meal time, budget ($0-$1,000), vegetarian/vegan preference, peanuts/milk/wheat exclusions and one of the four recipe names. The parser handles these patterns and asks for clarification when it cannot form a supported request. Pending context lasts through follow-up requests; confirmation saves household preferences for a later session.
 
-`commitPlan` verifies the revision and freshly computed confirmation snapshot before mutating a clone of the workspace. An idempotency key returns the first receipt on duplicate confirmation. The local transaction updates inventory, catalogue stock, order, calendar, preference memory and action ledger. `cancelPlan` restores the saved inventory/catalogue only where no later action could be overwritten.
+## Planning and confirmation
 
-## Scope of the service simulation
+Hard checks cover declared ingredient exclusions, diet, shopping budget, pack stock, preparation lead time and calendar overlap. Eligible candidates are ranked using near-date pantry lots, pantry coverage, cost and preparation time. Choosing a recipe keeps the hard checks in force.
 
-The hackathon's simulated Alexa+ route allows agentic tools without a specific SDK or MCP runtime. TableReady implements that route with JavaScript planning and local service adapters.
+`commitPlan` checks the workspace revision, the exact confirmation snapshot and a freshly recomputed plan before changing a cloned workspace. Repeating the same confirmed plan returns its first receipt. `cancelPlan` restores the latest unstarted plan only while its revision is still current, preserving later work.
 
-Ingredients, prices, stock and preparation times are authored demonstration fixtures. Ingredients-to-avoid checks use each fixture's declared ingredient list. Connecting a real supplier requires authoritative product labels, fulfilment times, authentication, consent and cancellation policies. Preparation steps accompany the fixture recipes; product instructions belong to the supplier integration.
+The fixture ingredient declarations support demonstration exclusions; a connected grocery service would need authoritative product labels and fulfilment data. The current inventory model allocates ingredients at confirmation. Reservations, deliveries and physical consumption are separate steps for a future connected adapter.
+
+## Persistence
+
+Workspace data is stored in this browser's localStorage and can be downloaded as JSON. If storage fails, the app displays a session-only notice. Text input and planning run locally. The same request interface is used throughout the demonstration.
 
 ## Files
 
-| File | Role |
+| File | Purpose |
 |---|---|
-| `agent.js` | Intent parsing, tool orchestration, candidate comparison, confirmation and reversal. |
-| `fixtures.js` | Fictional pantry, grocery catalogue and four authored recipes. |
-| `app.js` | Conversation, candidate cards, consent dialog and local service controls. |
-| `styles.css`, `icon.svg` | Original responsive interface and vector identity. |
-| `server.js` | Dependency-free development server. |
-| `tests/agent.test.js` | Sixteen domain tests for constraints, snapshot integrity, idempotency and cancellation. |
-| `ARCHITECTURE.md` | Planning/state contract and future service integration boundary. |
-| `submission_description.md` | Entry text for the Alexa+ primary track. |
-| `product_feedback.md`, `friction_log.md` | Required tool feedback and observed specification friction. |
-| `demo_script.md` | 2:45 demonstration plan. |
+| `agent.js` | Request parsing, planning, snapshot checks, confirmation and cancellation. |
+| `fixtures.js` | Authored pantry, prices, stock and four recipe fixtures. |
+| `app.js`, `styles.css`, `icon.svg` | Interface, browser persistence and original artwork. |
+| `server.js` | Development server. |
+| `tests/agent.test.js` | Executable checks for planning, constraints and state transitions. |
+| `ARCHITECTURE.md` | Data model, selection policy and service boundaries. |
+| `submission_description.md` | Devpost story and track answers. |
+| `product_feedback.md`, `friction_log.md` | Tool feedback and observed development friction. |
+| `demo_script.md` | English narration and actual recording sequence. |
 
-## Privacy and persistence
+## Verification and next steps
 
-The app uses localStorage in this browser profile. It makes no external runtime requests, uses no analytics, and loads no external fonts or artwork. Text is escaped before rendering. Exporting is an explicit local download. If browser storage fails, a session-only warning is shown. This version has no cloud backup, encrypted storage or verified reviewer identity. Do not use real private household data in the public demo.
+All **23 domain tests pass**. They exercise candidate selection, conversation changes, hard constraints, stale and altered confirmations, duplicate execution, persistence validation and guarded cancellation. Run `npm test` to reproduce the results.
 
-## Verification and next development
+Next: connect authorised pantry, supplier and calendar adapters; use independent quote versions and supplier cancellation responses; test the experience with households; and keep each action tied to its confirmed basket and time across devices.
 
-Sixteen automated tests cover unknown intent, stateful replanning, actual candidate differences, hard constraints, calendar conflict, atomic confirmation, idempotency, stale quotes, exact restoration and reversal limits. Browser layout and operation checks are recorded separately in `QA.md`.
-
-Next: replace individual adapters with authorised services; maintain independent quote versions; represent reservation, arrival and consumption separately; add structured supplier failures and multi-device confirmation delivery. Retain the same inspect-before-mutate contract.
-
-Created for Build, Ship, Shape: Amazon Developer Hackathon, October 2026, by Kyunghan Bae.
+Created by Kyunghan Bae for Build, Ship, Shape: Amazon Developer Hackathon, October 2026.

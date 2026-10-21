@@ -1,49 +1,59 @@
 # TableReady architecture
 
+## Entry route
+
+TableReady is a web-based **Alexa+ simulated experience** using custom local agentic tools. Its entry point is `app.js`; domain orchestration lives in `agent.js`. Local adapters model pantry, grocery and calendar services. The implementation follows the [simulation alternative in the official rules](https://amazonappdev2026.devpost.com/rules).
+
 ```mermaid
 flowchart LR
- U[Request or correction] --> P[Intent parser / ask a question]
- P --> A[Local agentic planner]
- I[Pantry lot service] --> A
- R[Recipe and declared ingredient service] --> A
- G[Grocery quote and stock service] --> A
- C[Preparation calendar service] --> A
- A --> O[Compare all four candidates]
+ U[Text request] --> P[Bounded intent parser]
+ P --> A[Local planner]
+ I[Pantry lots] --> A
+ R[Four recipe fixtures] --> A
+ G[Pack price and stock] --> A
+ C[Preparation calendar] --> A
+ A --> O[Compare feasible candidates]
  O --> S[Exact confirmation snapshot]
- S --> H[Human consent]
- H --> V[Recompute / verify revision]
- V --> T[Atomic local transaction]
- T --> I
- T --> G
- T --> C
- T --> L[Receipt / preference memory / ledger]
+ S --> H[User confirmation]
+ H --> V[Check revision and recompute]
+ V --> T[Commit cloned workspace]
+ T --> L[Inventory / receipt / calendar / memory]
+ L --> B[Browser persistence]
  L --> X[Guarded cancellation]
 ```
 
-## Tools and data
+## Planning tools
 
-The application uses plain JavaScript modules and browser localStorage. `fixtures.js` authors the demo catalogue, pantry and recipes. `agent.js` exports pure domain functions. `app.js` calls those functions and shows their actual outputs in an inspectable trace.
+`parseRequest` extracts supported fields or returns a clarification. Follow-up changes retain the pending request's other constraints.
 
-The pantry service filters available lots by date, then sorts by label date. Candidate comparison scales recipe quantities to diners, allocates pantry quantities, rounds missing amounts to purchasable packs and checks catalogue stock. The calendar service detects interval overlap and insufficient lead time. The basket service produces an exact quote from the same catalogue revision. These service adapters are local simulations; their state transitions are implemented, not prerecorded animations.
+`listPantry` excludes lots whose label date precedes the meal date. `compareRecipes` scales each recipe, allocates eligible lots in label-date order, rounds shortages to purchasable packs, and checks stock, budget, declared exclusions, diet, preparation lead time and calendar overlap. It exposes actual tool inputs and outputs for the interface trace.
 
-## Choice policy
+The pantry coverage percentage averages the fraction supplied for each required ingredient. It is an ingredient-coverage score, not a percentage of meal weight or cost. Near-date use counts pantry allocation records with label dates within three days of the meal.
 
-Hard constraints exclude candidates before ranking. Among eligible candidates the score is:
+Eligible candidates are ranked by:
 
-`nearDateLots × 20 + pantryCoverage × 0.5 − shoppingDollars × 0.8 − preparationMinutes × 0.15 + explicitRecipePreference × 100`
+`nearDateUses * 20 + pantryCoverage * 0.5 - shoppingDollars * 0.8 - preparationMinutes * 0.15 + explicitRecipePreference * 100`
 
-All terms are inspectable in `compareRecipes`. This policy is a product design choice for the demo, not a learned preference or validated measure of environmental benefit. A selected recipe that fails a hard constraint returns a question rather than silently substituting another dish.
+The formula is an authored product policy. An explicit recipe that fails a hard check returns a request for change rather than selecting a different meal automatically.
 
-## Consent and transaction
+## Consent contract
 
-A plan stores the request, recipe, consumption amounts, pack quote, total, preparation interval and workspace revision. Its fingerprint is the canonical JSON representation of that snapshot. Confirmation recomputes the plan and compares both fingerprint and revision. It applies all mutations to a cloned workspace only after successful verification. Duplicate confirmation returns the stored receipt using the plan ID and changes nothing.
+`buildPlan` records the request, recipe, pantry quantities, pack basket, total, preparation interval and workspace revision. Its snapshot is their JSON representation.
 
-Catalogue updates increment the revision, invalidating any pending plan. Confirmation also recalculates time constraints, so a plan may become invalid even when its stored revision has not changed. A real service version would use adapter-specific ETags/quote IDs and a signed consent payload rather than a local JSON fingerprint.
+`verifyPlan` compares the submitted fields with the stored snapshot, checks the revision, and rebuilds the plan using the current clock and workspace. `commitPlan` proceeds on a cloned workspace only after those checks pass. The plan ID acts as an idempotency key: a repeated confirmation returns its existing receipt without another allocation or order.
 
-## Reversal
+Confirmation reduces allocated pantry quantities and catalogue pack stock, records unused pack quantities as pantry lots, and creates the simulated receipt and calendar appointment. It also saves the confirmed preference profile and ledger. A future supplier adapter will separate reservation, delivery and consumption and derive product dates from supplier data.
 
-A confirmed plan stores the prior pantry and catalogue. Automatic cancellation is allowed only before preparation and only while the confirmation remains the latest revision. It restores those values and retains cancelled order and calendar records. Later changes block reversal rather than overwriting newer work. Preference history remains as decision memory. Real supplier cancellation would need an independent compensating action and a response from the supplier.
+## Cancellation
 
-## Persistence and security
+A receipt retains the previous pantry and catalogue. Cancellation is available before preparation starts and only while the confirmation remains the latest workspace revision. It restores the saved quantities, marks the order and appointment cancelled, and records the reversal. Confirmed preference memory is retained.
 
-One `tableready-workspace-v1` localStorage record holds quantities, receipts, calendar, preferences and ledger. Writes fail visibly to session-only mode. There are no credentials, third-party runtime calls or imported files. User strings are HTML escaped. This is a single-device prototype, so storage is not encrypted, account-scoped or tamper-proof. Production integration would require authenticated access, bounded adapter responses and server-side consent verification.
+This conservative rule avoids replacing newer workspace changes with an older snapshot. Connected services would need per-operation compensating actions and supplier responses rather than whole-workspace restoration.
+
+## Storage and interfaces
+
+The `tableready-workspace-v1` localStorage record contains inventory, orders, calendar, preferences and ledger. The interface escapes user strings and reports storage failures. A page reload reloads committed state; an unconfirmed conversation is session state.
+
+The text-planning path has no remote service dependency. The user submits a request and separately confirms the resulting actions.
+
+The domain model is designed for a single browser workspace. Connected operation would add authentication, service-specific quote versions, durable storage and server-side transaction validation.

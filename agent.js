@@ -5,21 +5,58 @@ const day=at=>{const d=new Date(at);return [d.getFullYear(),String(d.getMonth()+
 const fingerprint=x=>JSON.stringify(x);
 const event=(tool,input,output)=>({tool,input,output});
 export function parseRequest(text,profile,now=new Date(),previous=null){
- const s=text.toLowerCase().trim();
- if(!/\b(dinner|supper|meal|plan|curry|lentil|pasta|noodles|tonight|tomorrow|budget|under|vegan|vegetarian|avoid|peanuts|milk|wheat)\b/.test(s))return {question:'What would you like to plan? Try “Dinner tomorrow at 7 pm for 4, vegetarian, under $18.”'};
- const servingsMatch=s.match(/(?:for|serves?|people)\s*(\d+|one|two|three|four|five|six|seven|eight)\b/);const words={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8};
- const servings=servingsMatch?(words[servingsMatch[1]]??Number(servingsMatch[1])):profile.servings;
- const budgetMatch=s.match(/(?:under|budget(?: of)?|less than|up to)\s*\$?\s*(\d+(?:\.\d{1,2})?)/);
- const budgetCents=budgetMatch?Math.round(Number(budgetMatch[1])*100):profile.budgetCents;
- const diet=/\bvegan\b/.test(s)?'vegan':/\bvegetarian\b/.test(s)?'vegetarian':profile.diet;
- let avoid=[...profile.avoid];for(const key of ['peanuts','milk','wheat'])if(new RegExp(`(?:no|avoid|without)\\s+${key}(?:s)?\\b`).test(s))avoid.push(key);
- if(/no ingredient exclusions|clear exclusions/.test(s))avoid=[];
- let targetDate=previous?new Date(previous.at):new Date(now);if(s.includes('tomorrow')){targetDate=new Date(now);targetDate.setDate(targetDate.getDate()+1);}else if(s.includes('tonight')||s.includes('today'))targetDate=new Date(now);
- const t=s.match(/(?:at|by)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);let h=t?Number(t[1]):previous?targetDate.getHours():19,m=t?Number(t[2]??0):previous?targetDate.getMinutes():0;if(t?.[3]==='pm'&&h<12)h+=12;if(t?.[3]==='am'&&h===12)h=0;
- if(h>23||m>59||servings<1||servings>8||budgetCents<0||budgetCents>100000)return {question:'Please use 1–8 diners, a valid time, and a shopping budget between $0 and $1,000.'};
+ const unknown=()=>({question:'What would you like to plan? Try “Dinner tomorrow at 7 pm for 4, vegetarian, under $18.”'});
+ if(typeof text!=='string'||!text.trim())return unknown();
+ const s=text.toLowerCase().replace(/[’‘]/g,"'").trim();
+ // Carry the pending conversation, not only the last confirmed profile.
+ const base={...profile,...previous};
+ const words={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+ const number='[+-]?\\d+(?:\\.\\d+)?|'+Object.keys(words).join('|');
+ const servingMatches=[
+  ...s.matchAll(new RegExp(`\\b(?:for|serves?|people|diners?|servings?)(?:\\s+(?:to|of|is))?\\s+(${number})(?![\\w.])`,'g')),
+  ...s.matchAll(new RegExp(`(?:^|\\s)(${number})\\s+(?:people|diners?|servings?|of us)\\b`,'g')),
+  ...(previous?s.matchAll(new RegExp(`\\bmake it\\s+(${number})[.!?]?$`,'g')):[])
+ ];
+ const servingValues=[...new Set(servingMatches.map(m=>words[m[1]]??Number(m[1])))];
+ const servingsIntent=/\b(?:diners?|people|servings?|serves?)\b|\bfor\s*(?:$|[+-]?\d)/.test(s)||/\bfor\s+(?!today\b|tomorrow\b|tonight\b|dinner\b|supper\b|the meal\b)\S+/.test(s);
+ const moneyToken='[+-]?(?:\\d+(?:,\\d+)*(?:\\.\\d+)?|\\.\\d+)';
+ const budgetMatch=s.match(new RegExp(`\\$\\s*(${moneyToken})(?![\\w.])`))??s.match(new RegExp(`\\b(?:under|less than|up to|spend|budget(?:\\s+(?:of|to|is))?)\\s+(${moneyToken})(?![\\w.])`));
+ const budgetIntent=/\b(?:budget|under|less than|up to|spend)\b|\$/.test(s);
+ const timeValue='([+-]?\\d+(?::\\d+)?\\s*(?:am|pm)?)(?![\\w:.])';
+ const timeMatch=s.match(new RegExp(`\\b(?:at|by)\\s+${timeValue}`))
+  ??s.match(new RegExp(`\\b(?:move|reschedule|time)\\b[^,;]*?\\bto\\s+${timeValue}`))
+  ??s.match(/(?:^|\s)(\d+(?::\d+)?\s*(?:am|pm))\b/);
+ const timeIntent=/\b(?:at|by|time|reschedule)\b|\bmove\b[^,;]*?\bto\b/.test(s);
+ const clearExclusions=/\b(?:no ingredient exclusions|clear exclusions)\b/.test(s);
+ // A negated recipe/date/diet must never become a positive selection.
+ const negationCheck=s.replace(/\b(?:don't|do not)\s+(?:use|include|add|eat)\s+(?:peanuts|milk|wheat)\b/g,'');
+ if(/\b(?:not|never|don't|do not|no longer)\b|\bno\s+(?:vegan|vegetarian|curry|lentil|pasta|noodles|dinner|meal)\b/.test(negationCheck))return {question:'Please state the replacement directly, such as “Switch to curry”, “Make it vegetarian”, or “Move it to 8 pm”. Your previous constraints are unchanged.'};
+ if(servingValues.length>1||servingsIntent&&!servingValues.length)return {question:'How many diners? Please give one whole number from 1 to 8.'};
+ if(budgetIntent&&(!budgetMatch||/[-+]\s*\$/.test(s)||!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$/.test(budgetMatch[1])))return {question:'What is the shopping budget? Please give an amount from $0 to $1,000, with at most two decimal places.'};
+ if(timeIntent&&!timeMatch)return {question:'What time should dinner be ready? Try “At 8:30 pm”.'};
+ const recognized=/\b(dinner|supper|meal|plan|curry|lentil|pasta|noodles|tonight|today|tomorrow|vegan|vegetarian)\b/.test(s)||servingValues.length||budgetMatch||timeMatch||clearExclusions||/\b(?:no|avoid|without|don't use|do not use|don't include|do not include|don't add|do not add|don't eat|do not eat)\s+(?:peanuts|milk|wheat)\b/.test(s);
+ if(!recognized)return unknown();
+ const servings=servingValues[0]??base.servings;
+ const budgetCents=budgetMatch?Math.round(Number(budgetMatch[1].replaceAll(',',''))*100):base.budgetCents;
+ const diet=/\bvegan\b/.test(s)?'vegan':/\bvegetarian\b/.test(s)?'vegetarian':base.diet;
+ let avoid=clearExclusions?[]:[...(base.avoid??[])];
+ for(const key of ['peanuts','milk','wheat'])if(new RegExp(`\\b(?:no|avoid|without|(?:don't|do not) (?:use|include|add|eat))\\s+${key}\\b`).test(s))avoid.push(key);
+ const priorTime=previous?new Date(previous.at):null;
+ let targetDate=priorTime?new Date(priorTime):new Date(now);
+ if(/\btomorrow\b/.test(s)){targetDate=new Date(now);targetDate.setDate(targetDate.getDate()+1);}
+ else if(/\b(?:tonight|today)\b/.test(s))targetDate=new Date(now);
+ let h=priorTime?priorTime.getHours():19,m=priorTime?priorTime.getMinutes():0;
+ if(timeMatch){
+  const t=timeMatch[1].trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
+  if(!t)return {question:'Please use a valid time, such as 8:30 pm or 20:30.'};
+  h=Number(t[1]);m=Number(t[2]??0);
+  if(h>23||m>59||t[3]&&(h<1||h>12))return {question:'Please use a valid time, such as 8:30 pm or 20:30.'};
+  if(t[3]==='pm'&&h<12)h+=12;if(t[3]==='am'&&h===12)h=0;
+ }
+ if(!Number.isInteger(servings)||servings<1||servings>8||!Number.isInteger(budgetCents)||budgetCents<0||budgetCents>100000||!Number.isFinite(targetDate.getTime()))return {question:'Please use 1–8 diners, a valid time, and a shopping budget between $0 and $1,000.'};
  targetDate.setHours(h,m,0,0);
- const recipe=RECIPES.find(r=>s.includes(r.id)||s.includes(r.name.toLowerCase())||(r.id==='curry'&&s.includes('chickpea')));
- return {request:{text,servings,budgetCents,diet,avoid:[...new Set(avoid)],at:targetDate.toISOString(),preferredRecipe:recipe?.id??(!/\b(dinner|supper|meal|tonight|tomorrow)\b/.test(s)?previous?.preferredRecipe:null)??null}};
+ const recipe=RECIPES.find(r=>new RegExp(`\\b${r.id}\\b`).test(s)||s.includes(r.name.toLowerCase())||(r.id==='curry'&&/\bchickpea\b/.test(s)));
+ return {request:{text,servings,budgetCents,diet,avoid:[...new Set(avoid)],at:targetDate.toISOString(),preferredRecipe:recipe?.id??previous?.preferredRecipe??null}};
 }
 export function listPantry(state,at){return state.pantry.filter(l=>l.qty>0&&l.expires>=day(at)).map(safeClone);}
 export function compareRecipes(state,request,now=Date.now()){

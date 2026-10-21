@@ -20,3 +20,74 @@ test('expired lots are excluded and servings change real quantities',()=>{const 
 test('saved workspace and catalog edits reject malformed values',()=>{assert.equal(validateWorkspace(workspace()).revision,0);assert.throws(()=>validateWorkspace({...workspace(),pantry:[{qty:-1}]}));assert.throws(()=>updateCatalog(workspace(),'coconut',NaN,1));});
 test('confirmation verifies every action field, not only a stored fingerprint',()=>{const s=workspace(),p=buildPlan(s,request({preferredRecipe:'curry'}),now.getTime()).plan;assert.throws(()=>commitPlan(s,{...p,totalCents:0},now.getTime()));const changed=structuredClone(p);changed.consumption[0].qty=99999;assert.throws(()=>commitPlan(s,changed,now.getTime()));});
 test('incremental budget correction retains the explicit recipe; unrelated change asks',()=>{const prior=request({preferredRecipe:'curry'});const p=parseRequest('Under $6',workspace().profile,now,prior);assert.equal(p.request.preferredRecipe,'curry');assert.equal(Date.parse(p.request.at),Date.parse(prior.at));assert.ok(parseRequest('Change the weather',workspace().profile,now).question);});
+
+test('a conversation changes one constraint at a time without reverting pending preferences',()=>{
+ const profile=workspace().profile,originalProfile=structuredClone(profile);
+ const first=parseRequest('Curry tomorrow at 7 pm for three, vegan, under $12, no wheat',profile,now).request;
+ const originalFirst=structuredClone(first);
+ const diners=parseRequest('Actually make it six people',profile,now,first).request;
+ assert.deepEqual(diners,{...first,text:'Actually make it six people',servings:6});
+ const budget=parseRequest('Raise the budget to $20',profile,now,diners).request;
+ assert.deepEqual(budget,{...diners,text:'Raise the budget to $20',budgetCents:2000});
+ const later=parseRequest('Move it to 8:30 pm',profile,now,budget).request;
+ const expected=new Date(first.at);expected.setHours(20,30,0,0);
+ assert.deepEqual(later,{...budget,text:'Move it to 8:30 pm',at:expected.toISOString()});
+ assert.deepEqual(first,originalFirst);assert.deepEqual(profile,originalProfile);
+});
+
+test('changing the meal day preserves the chosen clock time, recipe and dietary constraints',()=>{
+ const profile=workspace().profile;
+ const first=parseRequest('Curry tomorrow at 8:30 pm for two, vegan, under $8, no wheat',profile,now).request;
+ const changed=parseRequest('Dinner today instead',profile,now,first).request;
+ const expected=new Date(now);expected.setHours(20,30,0,0);
+ assert.deepEqual(changed,{...first,text:'Dinner today instead',at:expected.toISOString()});
+});
+
+test('common diner and budget corrections accept whole counts and exact currency amounts',()=>{
+ const profile=workspace().profile,prior=request({servings:3});
+ for(const text of ['Make it six','Six people','Change servings to six','Dinner for six'])assert.equal(parseRequest(text,profile,now,prior).request.servings,6,text);
+ assert.equal(parseRequest('Set the budget to $12.50',profile,now,prior).request.budgetCents,1250);
+ assert.equal(parseRequest('Budget of $1,000',profile,now,prior).request.budgetCents,100000);
+ assert.equal(parseRequest('Under $0',profile,now,prior).request.budgetCents,0);
+});
+
+test('invalid explicit values ask instead of silently keeping or partially parsing a default',()=>{
+ const profile=workspace().profile,prior=request();
+ for(const text of ['Dinner for -2','Dinner for 2.5','Dinner for zero','Dinner for nine','Dinner for 4 and 6 people','Under $-5','Under $12.345','Budget $1,00','Budget $1001','At 13 pm','At 0 am','At 24:00','At 8:60','At 8:5','At -2 pm']){
+  const parsed=parseRequest(text,profile,now,prior);assert.ok(parsed.question,text);assert.equal(parsed.request,undefined,text);
+ }
+});
+
+test('missing correction values and empty input ask without changing the previous request',()=>{
+ const profile=workspace().profile,prior=request({servings:6,budgetCents:1250}),copy=structuredClone(prior);
+ for(const text of ['',null,undefined,'Change the budget to','Dinner for','Change servings to','Move it to','Dinner at','Make it']){
+  const parsed=parseRequest(text,profile,now,prior);assert.ok(parsed.question,String(text));assert.equal(parsed.request,undefined,String(text));
+ }
+ assert.deepEqual(prior,copy);
+});
+
+test('negated selections ask for a replacement while explicit ingredient exclusions remain supported',()=>{
+ const profile=workspace().profile,prior=request({diet:'vegan',preferredRecipe:'curry',avoid:['peanuts','wheat']});
+ for(const text of ['Not vegan','Not curry','Not tomorrow','Do not change the budget to $10','No longer vegetarian','Dinner without meat, not pasta'])assert.ok(parseRequest(text,profile,now,prior).question,text);
+ const excluded=parseRequest('Don’t use milk',profile,now,prior).request;
+ assert.deepEqual(excluded.avoid,['peanuts','wheat','milk']);assert.equal(excluded.preferredRecipe,'curry');
+ const cleared=parseRequest('Clear exclusions',profile,now,excluded).request;
+ assert.deepEqual(cleared.avoid,[]);assert.equal(cleared.diet,'vegan');assert.deepEqual(prior.avoid,['peanuts','wheat']);
+});
+
+test('a conversational revision changes real quantities and still confirms once and cancels exactly',()=>{
+ const state=workspace(),profile=state.profile;
+ const first=parseRequest('Curry tomorrow at 7 pm for four, vegan, under $18',profile,now).request;
+ const before=buildPlan(state,first,now.getTime(),'PLAN-BEFORE').plan;
+ const revised=parseRequest('Make it six people',profile,now,first).request;
+ const plan=buildPlan(state,revised,now.getTime(),'PLAN-AFTER').plan;
+ assert.ok(before);assert.ok(plan);assert.equal(plan.request.servings,6);
+ assert.ok(plan.consumption.find(x=>x.key==='rice').qty>before.consumption.find(x=>x.key==='rice').qty);
+ const committed=commitPlan(state,plan,now.getTime());
+ assert.equal(committed.state.calendar[0].servings,6);assert.equal(state.revision,0);
+ const duplicate=commitPlan(committed.state,plan,now.getTime());
+ assert.equal(duplicate.idempotent,true);assert.equal(duplicate.state.orders.length,1);
+ const cancelled=cancelPlan(duplicate.state,plan.id,now.getTime());
+ assert.deepEqual(cancelled.pantry,state.pantry);assert.deepEqual(cancelled.catalog,state.catalog);
+ assert.equal(cancelled.orders[0].status,'simulated-cancelled');assert.equal(cancelled.calendar[0].status,'cancelled');
+});

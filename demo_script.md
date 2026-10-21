@@ -1,16 +1,29 @@
-# TableReady demonstration — 2 minutes 45 seconds
+# TableReady demonstration — 160 seconds
 
-Use the deployed browser app, fictional data and actual interactions. Keep text readable. The final video must be public on YouTube or Vimeo and shorter than three minutes.
+## Recording setup
 
-| Time | Operation | Narration |
+Record the working app at a readable desktop size, beginning with fresh fictional fixture data. Use tomorrow's dinner so the preparation interval remains in the future. Keep the browser's date and local timezone visible when useful. Use English narration and readable English interface text. Publish the final video publicly on YouTube or Vimeo and place its URL in the Devpost video field.
+
+Use typed conversational requests in the working application. Capture every operation shown in the final edit from the running app.
+
+## Timeline and narration
+
+| Time | Actual screen action | English narration |
 |---|---|---|
-| 0:00–0:15 | Overview hero, simulation label and household preferences. | “TableReady turns a dinner request into a considered plan. This is an Alexa+ experience simulation with a real local agentic planner and fictional service data.” |
-| 0:15–0:40 | Select Plan tomorrow. Show four candidates and expand recipes.compare tool trace. | “The planner retrieves pantry lots, scales four recipes, quotes missing packs and checks the preparation time. Here, lentil bowls use existing ingredients. Peanut noodles fail the household's declared exclusion.” |
-| 0:40–1:00 | Select Try the curry. Show revised $7.55 basket and unchanged dinner time. | “A conversational change causes a fresh comparison, while keeping the pending time, diners and budget. This curry needs three grocery items. Nothing has been ordered or reserved yet.” |
-| 1:00–1:25 | Pantry & services: change coconut milk stock to zero. Return and attempt Inspect & confirm / confirm. Replan curry to show failure. | “Service conditions can change after a quote. The old confirmation is blocked, and a fresh plan reports the stock constraint. The agent asks for a change instead of making an unauthorised substitution.” |
-| 1:25–1:50 | Restore stock to 5, request curry, inspect confirmation and confirm local actions. | “Restoring stock produces a new quote. The exact confirmation lists the basket, total and preparation time. The agent verifies it again, then updates pantry quantities, the simulated receipt and local calendar together.” |
-| 1:50–2:15 | Open Pantry & services: changed rice quantity, stock, scheduled meal. Then Activity & memory: action chain and saved preferences. | “These are actual local state changes, not prerecorded responses. The action ledger records consent, inventory, order and calendar steps. Confirmation stores household preferences for the next session. A repeated confirmation returns the same receipt.” |
-| 2:15–2:35 | Cancel latest plan before making any other service change. Show restored pantry, cancelled order/calendar history. | “The latest plan can be reversed before preparation starts. Original quantities are restored, while cancellation history remains. Newer changes prevent an old reversal from overwriting later work.” |
-| 2:35–2:45 | Closing overview with working URL and source repository. | “TableReady makes multi-service planning inspectable, keeps consent exact and makes recovery part of the product. Connected services can replace the adapters while keeping that contract.” |
+| 0:00–0:14 | Show TableReady and the Alexa+ simulation label. Enter `Dinner tomorrow at 7 pm for four, vegetarian, under $18`. | “TableReady is an Alexa+ dinner-planning simulation. One request checks the pantry, meal options, grocery basket and preparation time. The services use fictional data; the planner and state changes run here.” |
+| 0:14–0:36 | Submit. Show the four cards and expand `recipes.compare` input/output. | “Four recipes are calculated against the same request. Lentil bowls use the pantry. Peanut noodles conflict with the household's peanut exclusion. The trace shows the actual tool inputs, costs and reasons behind the comparison.” |
+| 0:36–0:54 | Enter `Switch to curry, under $8`. Show four diners, tomorrow at 7 pm, and $7.55 total. | “I can change my mind without repeating everything. Curry, under eight dollars, keeps the diners and dinner time. The pantry supplies the rice; chickpeas, coconut milk and spinach cost seven dollars fifty-five.” |
+| 0:54–1:22 | Open Pantry & services; set coconut stock to 0 and save. Return to planner, inspect and attempt confirmation. Show stale rejection. Enter `Switch to curry` again; show stock failure. | “Now stock changes after the quote. Confirming the old basket is blocked. A fresh request finds the unavailable ingredient and asks for a change. The assistant preserves the decision boundary when service conditions change.” |
+| 1:22–1:48 | Restore coconut stock to 5, price $2.20. Return and request curry again. Open exact confirmation; show rice 280 g, basket $7.55, 25-minute preparation interval. Confirm. | “Restoring stock produces a new plan. Before committing, I see the exact pantry quantities, grocery packs and preparation interval. Confirmation checks the quote again, then records the inventory allocation, simulated order and calendar booking together.” |
+| 1:48–2:10 | Show Pantry & services: rice 340 g, coconut stock 4, scheduled meal. Show Activity & memory and reload. | “The rice quantity falls from six hundred twenty to three hundred forty grams. The receipt, calendar and action ledger are saved. Reloading keeps the confirmed state and household preferences on this device.” |
+| 2:10–2:29 | Return to planner; cancel the latest plan before any further service update. Show cancelled receipt, then restored rice 620 g and coconut stock 5. | “Plans change after confirmation, too. Cancelling this unstarted plan restores the previous quantities and retains its cancellation history. Later workspace changes would block an older reversal from replacing newer work.” |
+| 2:29–2:40 | Show tool trace or Agent method, then the real app and repository URLs. | “TableReady carries a conversation through comparison, service failure, confirmation and recovery. The source, setup instructions and executable tests make each step inspectable.” |
 
-Recording requirement: the cancellation demonstration must immediately follow confirmation, with no new catalogue update after confirmation. If a browser-specific issue is found, repair and re-record the actual operation. Do not add actual Alexa, AWS, merchant or payment claims.
+## Continuity checks
+
+- Fresh fixture curry basket: chickpeas 2 x $1.55, coconut milk 1 x $2.20, spinach 1 x $2.25 = **$7.55**.
+- The pantry supplies **280 g rice**. Confirmation changes rice **620 -> 340 g**, coconut stock **5 -> 4**, chickpea stock **10 -> 8**, and spinach stock **4 -> 3**.
+- Reload only after confirmation. Pending conversations are session state; confirmed workspace data persists.
+- Do not update any service after the successful confirmation and before cancellation. Reloading or navigating pages does not alter the revision.
+- The film demonstrates one successful confirmation. Duplicate-confirmation behavior belongs to the automated tests unless it is separately captured in the application.
+- Keep source/service disclosures concise. Show the working simulation rather than substituting a narrated slideshow for the required demonstration.
